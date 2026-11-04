@@ -1,3 +1,7 @@
+# Stage 1: Build stage with Maven and JDK 17
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
+WORKDIR /app
+
 # Step 1.1: Copy dependency descriptor and download dependencies offline
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
@@ -6,7 +10,7 @@ RUN mvn dependency:go-offline -B
 COPY sb-exclude.xml* checkstyle*.xml* ./
 COPY src ./src
 
-# Step 1.3: Build the production executable JAR (skip tests and redundant linting)
+# Step 1.3: Build the production executable JAR (skip tests and duplicate checks)
 RUN mvn clean package -DskipTests -Dspotbugs.skip=true -Dcheckstyle.skip=true
 
 # Stage 2: Lean runtime stage with JRE 17
@@ -16,7 +20,7 @@ WORKDIR /app
 # Copy the compiled JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose Spring Boot's internal port
+# Expose Spring Boot internal port
 EXPOSE 8080
 
 # Run the Spring Boot application
